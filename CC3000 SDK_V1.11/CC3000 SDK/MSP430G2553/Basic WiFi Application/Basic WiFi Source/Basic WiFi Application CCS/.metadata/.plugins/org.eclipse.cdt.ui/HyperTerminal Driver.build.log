@@ -1,0 +1,13 @@
+
+**** Build of configuration Debug for project HyperTerminal Driver ****
+
+/opt/ti/ccsv5/utils/bin/gmake -k all 
+Building target: HyperTerminal Driver.lib
+Invoking: MSP430 Archiver
+"/opt/ti/ccsv5/tools/compiler/msp430_4.2.1/bin/ar430" r "HyperTerminal Driver.lib"  "./dispatcher.obj" 
+  ==>  new archive 'HyperTerminal Driver.lib'
+  ==>  building archive 'HyperTerminal Driver.lib'
+Finished building target: HyperTerminal Driver.lib
+ 
+
+**** Build Finished ****
