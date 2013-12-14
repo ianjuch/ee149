@@ -9,9 +9,12 @@ $(GEN_CMDS__FLAG) \
 "./board.obj" \
 "./basic_wifi_application.obj" \
 "../lnk_msp430g2553.cmd" \
-"/home/ian/CC3000 SDK_V1.11/CC3000 SDK/MSP430G2553/Basic WiFi Application/Basic WiFi Source/Basic WiFi Application CCS/CC3000 Spi/Debug/CC3000 Spi.lib" \
-"/home/ian/CC3000 SDK_V1.11/CC3000 SDK/MSP430G2553/Basic WiFi Application/Basic WiFi Source/Basic WiFi Application CCS/CC3000HostDriver/Debug/CC3000HostDriver.lib" \
-"/home/ian/CC3000 SDK_V1.11/CC3000 SDK/MSP430G2553/Basic WiFi Application/Basic WiFi Source/Basic WiFi Application CCS/HyperTerminal Driver/Debug/HyperTerminal Driver.lib" \
+"../../CC3000 Spi/Debug/CC3000 Spi.lib" \
+"../../CC3000HostDriver/Debug/CC3000HostDriver.lib" \
+"../../HyperTerminal Driver/Debug/HyperTerminal Driver.lib" \
+#"/home/ian/ee149/CC3000\ SDK_V1.11/CC3000\ SDK/MSP430G2553/Basic\ WiFi\ Application/Basic\ WiFi\ Source/Basic\ WiFi\ Application\ CCS/CC3000\ Spi/Debug/CC3000\ Spi.lib" \
+"/home/ian/ee149/CC3000\ SDK_V1.11/CC3000\ SDK/MSP430G2553/Basic\ WiFi\ Application/Basic\ WiFi\ Source/Basic\ WiFi\ Application\ CCS/CC3000HostDriver/Debug/CC3000HostDriver.lib" \
+"/home/ian/ee149/CC3000\ SDK_V1.11/CC3000\ SDK/MSP430G2553/Basic\ WiFi\ Application/Basic\ WiFi\ Source/Basic\ WiFi\ Application\ CCS/HyperTerminal\ Driver/Debug/HyperTerminal\ Driver.lib" \
 -l"libc.a" \
 
 -include ../makefile.init
