@@ -47,6 +47,7 @@
 #include "nvmem.h"
 #include "security.h"
 #include "evnt_handler.h"
+#include "msp430.h"
 
 
 volatile sSimplLinkInformation tSLInformation;

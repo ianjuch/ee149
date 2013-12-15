@@ -45,6 +45,7 @@
 #include "spi.h"
 #include "evnt_handler.h"
 #include "wlan.h"
+#include "msp430.h"
 
 #define SL_PATCH_PORTION_SIZE		(1000)
 
@@ -73,7 +74,6 @@ hci_command_send(unsigned short usOpcode, unsigned char *pucBuff,
 	UINT8_TO_STREAM(stream, HCI_TYPE_CMND);
 	stream = UINT16_TO_STREAM(stream, usOpcode);
 	UINT8_TO_STREAM(stream, ucArgsLength);
-	
 	//Update the opcode of the event we will be waiting for
 	SpiWrite(pucBuff, ucArgsLength + SIMPLE_LINK_HCI_CMND_HEADER_SIZE);
 	

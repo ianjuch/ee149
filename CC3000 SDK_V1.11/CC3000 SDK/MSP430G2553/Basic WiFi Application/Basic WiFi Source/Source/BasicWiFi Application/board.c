@@ -33,7 +33,8 @@
 *
 *****************************************************************************/
 
-#include "msp430g2553.h"
+//#include "msp430g2553.h"
+#include "msp430g2955.h"
 #include "wlan.h" 
 #include "evnt_handler.h"    
 #include "nvmem.h"
@@ -107,7 +108,7 @@ void pio_init()
 //
 //*****************************************************************************
 
-void ConfigureSwitch(void)
+void ConfigureSwitch(void) //TODO:reconfigure bits here
 {
     // Enable switches 
     // P1.3 and p3.3 configured as switches
@@ -151,7 +152,7 @@ void ConfigureSwitch(void)
 
 long ReadWlanInterruptPin(void)
 {
-	return (P2IN & BIT6);
+	return (P2IN & BIT3);
 }
 
 //*****************************************************************************
@@ -170,8 +171,8 @@ long ReadWlanInterruptPin(void)
 void WlanInterruptEnable()
 {
 	__bis_SR_register(GIE);
-	P2IES |= BIT6;
-	P2IE |= BIT6;
+	P2IES |= BIT3;//BIT6;
+	P2IE |= BIT3;//BIT6;
 }
 
 //*****************************************************************************
@@ -189,7 +190,7 @@ void WlanInterruptEnable()
 
 void WlanInterruptDisable()
 {
-	P2IE &= ~BIT6;
+	P2IE &= ~BIT3;//~BIT6;
 }
 
 
@@ -209,11 +210,13 @@ void WriteWlanPin( unsigned char val )
 {
 	if (val)
 	{
-		P1OUT |= BIT0;	
+		//P1OUT |= BIT0;
+		P3OUT |= BIT7;
 	}
 	else
 	{
-		P1OUT &= ~BIT0;
+		//P1OUT &= ~BIT0;
+		P3OUT &= ~BIT7;
 	}
 }
 //*****************************************************************************

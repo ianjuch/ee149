@@ -91,25 +91,6 @@ extern int uart_have_cmd;
 
 #define NETAPP_IPCONFIG_MAC_OFFSET				(20)
 
-#define LED_T_L 0x6
-#define LED_T_M 0xc
-#define LED_T_R 0xe
-#define LED_L_0 0x2
-#define LED_L_1 0x3
-#define LED_L_2 0x4
-#define LED_L_3 0x5
-#define LED_L_4 0x8
-#define LED_L_5 0x7
-#define LED_R_0 :(
-#define LED_R_1 0x9
-#define LED_R_2 0xa
-#define LED_R_3 0xb
-#define LED_R_4 0xd
-#define LED_R_5 0xf
-void i2cWriteByte(unsigned char, unsigned char, unsigned char);
-void fadeOn(unsigned char ledAddr);
-void delay_ms();
-
 volatile unsigned long ulSmartConfigFinished, ulCC3000Connected,ulCC3000DHCP,
 OkToDoShutDown, ulCC3000DHCP_configured;
 volatile unsigned char ucStopSmartConfig;
@@ -156,6 +137,7 @@ unsigned char pucCC3000_Rx_Buffer[CC3000_APP_BUFFER_SIZE + CC3000_RX_BUFFER_OVER
 __no_init unsigned char pucCC3000_Rx_Buffer[CC3000_APP_BUFFER_SIZE + CC3000_RX_BUFFER_OVERHEAD_SIZE];
 
 #endif
+unsigned char pucCC3000_Rx_Buffer[CC3000_APP_BUFFER_SIZE + CC3000_RX_BUFFER_OVERHEAD_SIZE];
 
 
 
@@ -163,7 +145,7 @@ __no_init unsigned char pucCC3000_Rx_Buffer[CC3000_APP_BUFFER_SIZE + CC3000_RX_B
 
 //*****************************************************************************
 //
-//! itoa
+//! my_itoa
 //!
 //! @param[in]  integer number to convert
 //!
@@ -174,7 +156,7 @@ __no_init unsigned char pucCC3000_Rx_Buffer[CC3000_APP_BUFFER_SIZE + CC3000_RX_B
 //! @brief  Convert integer to ASCII in decimal base
 //
 //*****************************************************************************
-unsigned short itoa(char cNum, char *cString)
+unsigned short my_itoa(char cNum, char *cString)
 {
 	char* ptr;
 	char uTemp = cNum;
@@ -463,16 +445,15 @@ initDriver(void)
 	
 	// Init GPIO's
 	pio_init();
-	fadeOn(LED_T_M);
 	
 	//Init Spi
 	init_spi();
-	fadeOn(LED_T_R);
 	
-	//DispatcherUARTConfigure();
+	DispatcherUARTConfigure();
 	
 	// WLAN On API Implementation
 	wlan_init( CC3000_UsynchCallback, sendWLFWPatch, sendDriverPatch, sendBootLoaderPatch, ReadWlanInterruptPin, WlanInterruptEnable, WlanInterruptDisable, WriteWlanPin);
+	
 	// Trigger a WLAN device
 	wlan_start(0);
 	
@@ -481,32 +462,33 @@ initDriver(void)
 	
 	// Mask out all non-required events from CC3000
 	wlan_set_event_mask(HCI_EVNT_WLAN_KEEPALIVE|HCI_EVNT_WLAN_UNSOL_INIT|HCI_EVNT_WLAN_ASYNC_PING_REPORT);
+	
 	// Generate the event to CLI: send a version string
 	{
 		char cc3000IP[50];
 		char *ccPtr;
 		unsigned short ccLen;
 		
-		//DispatcherUartSendPacket((unsigned char*)pucUARTExampleAppString, sizeof(pucUARTExampleAppString));
+		DispatcherUartSendPacket((unsigned char*)pucUARTExampleAppString, sizeof(pucUARTExampleAppString));
 		
 		
 		ccPtr = &cc3000IP[0];
-		ccLen = itoa(PALTFORM_VERSION, ccPtr);
+		ccLen = my_itoa(PALTFORM_VERSION, ccPtr);
 		ccPtr += ccLen;
 		*ccPtr++ = '.';
-		ccLen = itoa(APPLICATION_VERSION, ccPtr);
+		ccLen = my_itoa(APPLICATION_VERSION, ccPtr);
 		ccPtr += ccLen;
 		*ccPtr++ = '.';
-		ccLen = itoa(SPI_VERSION_NUMBER, ccPtr);
+		ccLen = my_itoa(SPI_VERSION_NUMBER, ccPtr);
 		ccPtr += ccLen;
 		*ccPtr++ = '.';
-		ccLen = itoa(DRIVER_VERSION_NUMBER, ccPtr);
+		ccLen = my_itoa(DRIVER_VERSION_NUMBER, ccPtr);
 		ccPtr += ccLen;
 		*ccPtr++ = '\f';
 		*ccPtr++ = '\r';
 		*ccPtr++ = '\0';
 		
-		//DispatcherUartSendPacket((unsigned char*)cc3000IP, strlen(cc3000IP));
+		DispatcherUartSendPacket((unsigned char*)cc3000IP, strlen(cc3000IP));
 	}
 	
 	wakeup_timer_init();
@@ -563,11 +545,11 @@ void StartSmartConfig(void)
 	while (ulSmartConfigFinished == 0)
 	{
 		
-		__delay_cycles(6000000);
+		__delay_cycles(60000);
 		
 		turnLedOff(6);
 		
-		__delay_cycles(6000000);
+		__delay_cycles(60000);
 		
 		turnLedOn(6);  
 		
@@ -593,7 +575,7 @@ void StartSmartConfig(void)
 	// reset the CC3000
 	wlan_stop();
 	
-	__delay_cycles(6000000);
+	__delay_cycles(60000);
 	
 	DispatcherUartSendPacket((unsigned char*)pucUARTCommandSmartConfigDoneString, sizeof(pucUARTCommandSmartConfigDoneString));
 	
@@ -617,9 +599,6 @@ void StartSmartConfig(void)
 void
 DemoHandleUartCommand(unsigned char *usBuffer)
 {
-	P2DIR |= BIT1;
-	P2OUT |= BIT1;
-
 	char *pcSsid, *pcData, *pcSockAddrAscii;
 	unsigned long ulSsidLen, ulDataLength;
 	volatile signed long iReturnValue;
@@ -790,8 +769,6 @@ DemoHandleUartCommand(unsigned char *usBuffer)
 		break;
 		
 	default:
-		P2DIR |= BIT0;
-		P2OUT |= BIT0;
 		DispatcherUartSendPacket((unsigned char*)pucUARTIllegalCommandString, sizeof(pucUARTIllegalCommandString));
 		break;
 		
@@ -799,60 +776,6 @@ DemoHandleUartCommand(unsigned char *usBuffer)
 	
 	// Send a response - the command handling has finished
 	DispatcherUartSendPacket((unsigned char *)(pucUARTCommandDoneString), sizeof(pucUARTCommandDoneString));
-}
-
-void fadeOn(unsigned char ledAddr)
-{
-    unsigned char i = 0;
-    while (i < 255)
-    {
-        i += 5;
-        i2cWriteByte(ledAddr, i, 0x60);
-        delay_ms(2);
-    }
-}
-void fadeOff(unsigned char ledAddr)
-{
-    unsigned char i = 255;
-    while (i > 0)
-    {
-        i -= 5;
-        i2cWriteByte(ledAddr, i, 0x60);
-        delay_ms(2);
-    }
-}
-
-void i2cWriteByte(unsigned char data0, unsigned char data1, unsigned char address)
-{
-    while(UCB0STAT & UCBBUSY){
-
-    }
-    UCB0I2CSA = address;
-    UCB0CTL1 |= UCTR;
-    UCB0CTL1 |= UCTXSTT;
-    while (!(IFG2 & UCB0TXIFG))
-    {
-        //__asm__("nop");
-    }
-    UCB0TXBUF = data0;
-    while (!(IFG2 & UCB0TXIFG))
-    {
-        //__asm__("nop");
-    }
-    UCB0TXBUF = data1;
-    while (!(IFG2 & UCB0TXIFG))
-    {
-        //__asm__("nop");
-    }
-    UCB0CTL1 |= UCTXSTP;
-
-    // set UCTXSTP or write another character to the buffer
-}
-void delay_ms(int d)
-{
-    int i;
-    for (i = 0; i < d; i++)
-        __delay_cycles(1000);
 }
 
 //*****************************************************************************
@@ -869,34 +792,6 @@ void delay_ms(int d)
 
 main(void)
 {
-	WDTCTL = WDTPW + WDTHOLD;
-  
-  P1DIR |= BIT6 | BIT7;
-  P1OUT &= ~BIT6;
-  P1OUT &= ~BIT7;
-
-  DCOCTL = 0;
-  BCSCTL1 = CALBC1_1MHZ;
-  DCOCTL = CALDCO_1MHZ;
-  P3SEL |= BIT1 | BIT2; 
-	// Set up I2C
-	UCB0BR0 = 10; // Divide clock source by 160
-	UCB0CTL0 = UCSYNC|UCMST|UCMODE1|UCMODE0;
-	UCB0CTL1 = UCSSEL1|UCSSEL0; // Clears reset
-	delay_ms(5);
-	i2cWriteByte(0x00, 0x00, 0x60);
-  delay_ms(5);
-  i2cWriteByte(0x00, 0x00, 0x60);
-  delay_ms(5);
-  i2cWriteByte(0x14, 0xaa, 0x60);
-  delay_ms(5);
-  i2cWriteByte(0x15, 0xaa, 0x60);
-  delay_ms(5);
-  i2cWriteByte(0x16, 0xaa, 0x60);
-  delay_ms(5);
-  i2cWriteByte(0x17, 0xaa, 0x60);
-
-  fadeOn(LED_T_L);
 
 	ulCC3000DHCP = 0;
 	ulCC3000Connected = 0;
@@ -904,77 +799,56 @@ main(void)
 	ulSmartConfigFinished=0;
 	
 	
+	WDTCTL = WDTPW + WDTHOLD;
 	
-
 	//  Board Initialization start
 	initDriver();
-
+	
 	// Initialize the UART RX Buffer   
 	memset(g_ucUARTBuffer, 0xFF, UART_IF_BUFFER);
-	uart_have_cmd =0;
-
-	char* string = "\nwifi test\n";
-	DispatcherUartSendPacket((unsigned char *)(string), 11);
+	uart_have_cmd =0;       
 	
-	//connect to access point
-	//wlan_connect("TRENDnet637", 11);
-	wlan_connect("friendsofthefellowship", 22);
-	DispatcherUartSendPacket("connected\n", 10);
+	// Loop forever waiting  for commands from PC...
+	while (1)
+	{
+		__bis_SR_register(LPM2_bits + GIE); 
+		__no_operation();
 
-	//display the IP address
-	while(1){
-		if( (ulCC3000DHCP == 1) && (ulCC3000Connected == 1)  && (printOnce == 1) )
+		
+		if (uart_have_cmd)
+		{
+			wakeup_timer_disable();
+			//Process the cmd in RX buffer
+			DemoHandleUartCommand(g_ucUARTBuffer);
+			uart_have_cmd = 0;
+			memset(g_ucUARTBuffer, 0xFF, UART_IF_BUFFER);			
+			wakeup_timer_init();
+		}
+		
+		// complete smart config process:
+		// 1. if smart config is done 
+		// 2. CC3000 established AP connection
+		// 3. DHCP IP is configured
+		// then send mDNS packet to stop external SmartConfig application
+		if ((ucStopSmartConfig == 1) && (ulCC3000DHCP == 1) && (ulCC3000Connected == 1))
+		{
+			unsigned char loop_index = 0;
+			
+			while (loop_index < 3)
+			{
+				mdnsAdvertiser(1,device_name,strlen(device_name));
+				loop_index++;
+			}
+			
+			ucStopSmartConfig = 0;
+		}
+		
+		if( (ulCC3000DHCP == 1) && (ulCC3000Connected == 1)  && (printOnce == 1) ) 
 		{
 			printOnce = 0;
 			DispatcherUartSendPacket((unsigned char*)pucCC3000_Rx_Buffer, strlen((char const*)pucCC3000_Rx_Buffer));
-			break;
 		}
-	}
-
-	//create a listening socket
-	int server_socket;
-	server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-	//set port number and bind to it
-	int port = 65500;
-	sockaddr tSocketAddr;
-	tSocketAddr.sa_family = AF_INET;
-	tSocketAddr.sa_data[0] = (port & 0xFF00)>> 8;
-	tSocketAddr.sa_data[1] = (port & 0x00FF);
-	memset (&tSocketAddr.sa_data[2], 0, 4);
-	bind(server_socket, &tSocketAddr, sizeof(sockaddr));
-
-	//listen for connections
-	listen(server_socket, 1);
-
-	//initialize client info
-	int client = 0;
-	sockaddr clientaddr;
-	socklen_t addrlen;
-
-	//accept connection
-	addrlen = sizeof(clientaddr);
-	while(client <= 0){
-		client = accept(server_socket, (sockaddr*) &clientaddr, &addrlen);
-	}
-	//display and send an ack
-	char msg[9] = "TCP open\n";
-	send(client, msg, sizeof(msg), 0);
-	DispatcherUartSendPacket((unsigned char *)msg, 9);
-
-	//receive bytes from socket
-	char recvBuffer[20];
-	int bytesRecvd = recv(client, recvBuffer, sizeof(recvBuffer), 0);
-  //fadeOn(LED_T_R);
-
-	//display received data
-	DispatcherUartSendPacket((unsigned char *)recvBuffer, bytesRecvd);
-
-	send(client, msg, sizeof(msg), 0);
-	DispatcherUartSendPacket((unsigned char *)msg, 9);
-
-	bytesRecvd = recv(client, recvBuffer, sizeof(recvBuffer), 0);
-	DispatcherUartSendPacket((unsigned char *)recvBuffer, bytesRecvd);
-
+		
+	}  
 }
 

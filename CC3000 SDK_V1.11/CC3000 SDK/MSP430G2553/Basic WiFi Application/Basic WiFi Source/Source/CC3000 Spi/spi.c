@@ -53,9 +53,9 @@
 #define HI(value)               (((value) & 0xFF00) >> 8)
 #define LO(value)               ((value) & 0x00FF)
 
-#define ASSERT_CS()          (P2OUT &= ~BIT7)//(P2OUT &= ~BIT7)
+#define ASSERT_CS()          (P3OUT &= ~BIT6)//(P2OUT &= ~BIT7)
 
-#define DEASSERT_CS()        (P2OUT |= BIT7)//(P2OUT |= BIT7)
+#define DEASSERT_CS()        (P3OUT |= BIT6)//(P2OUT |= BIT7)
 
 #define HEADERS_SIZE_EVNT       (SPI_HEADER_SIZE + 5)
 
@@ -243,14 +243,20 @@ int init_spi(void)
 	SPI_CLK_PORT_SEL |= (SPI_CLK_PIN);
 
                     
-	UCB0CTL1 |= UCSWRST;                     // **Put state machine in reset**
-	UCB0CTL0 |= (UCMST+UCSYNC+UCMSB);   	// 3-pin, 8-bit SPI master
+	//UCB0CTL1 |= UCSWRST;                     // **Put state machine in reset**
+	UCA0CTL1 |= UCSWRST;                     // **Put state machine in reset**
+	//UCB0CTL0 |= (UCMST+UCSYNC+UCMSB);   	// 3-pin, 8-bit SPI master
+	UCA0CTL0 |= (UCMST+UCSYNC+UCMSB);   	// 3-pin, 8-bit SPI master
 	                                          // Clock polarity high, MSB
-	UCB0CTL1 |= UCSSEL_2;                    // ACLK
-	UCB0BR0 = 0x10;                           // /2 change to /1
-	UCB0BR1 = 0;                              //
+	//UCB0CTL1 |= UCSSEL_2;                    // ACLK
+	UCA0CTL1 |= UCSSEL_2;                    // ACLK
+	//UCB0BR0 = 0x10;                           // /2 change to /1
+	UCA0BR0 = 0x10;                           // /2 change to /1
+	//UCB0BR1 = 0;                              //
+	UCA0BR1 = 0;                              //
 
-	UCB0CTL1 &= ~UCSWRST;                    // **Initialize USCI state machine**
+	//UCB0CTL1 &= ~UCSWRST;                    // **Initialize USCI state machine**
+	UCA0CTL1 &= ~UCSWRST;                    // **Initialize USCI state machine**
     
     return(ESUCCESS);
 }
@@ -337,13 +343,13 @@ SpiWrite(unsigned char *pUserBuffer, unsigned short usLength)
 		while (1)
 			;
 	}
+	
 
 	if (sSpiInformation.ulSpiState == eSPI_STATE_POWERUP)
 	{
 		while (sSpiInformation.ulSpiState != eSPI_STATE_INITIALIZED)
 			;
 	}
-	
 	if (sSpiInformation.ulSpiState == eSPI_STATE_INITIALIZED)
 	{
 		//
@@ -424,9 +430,11 @@ SpiWriteDataSynchronous(unsigned char *data, unsigned short size)
 	while (size)
     {   	
         while (!(TXBufferIsEmpty()));
-		UCB0TXBUF = *data;
+		//UCB0TXBUF = *data;
+		UCA0TXBUF = *data;
 		while (!(RXBufferIsEmpty()));
-		UCB0RXBUF;
+		//UCB0RXBUF;
+		UCA0RXBUF;
 		size --;
         data++;
     }
@@ -453,9 +461,11 @@ SpiReadDataSynchronous(unsigned char *data, unsigned short size)
     {
     	while (!(TXBufferIsEmpty()));
 			//Dummy write to trigger the clock
-		UCB0TXBUF = data_to_send[0];
+		//UCB0TXBUF = data_to_send[0];
+		UCA0TXBUF = data_to_send[0];
 		while (!(RXBufferIsEmpty()));
-		data[i] = UCB0RXBUF;
+		//data[i] = UCB0RXBUF;
+		data[i] = UCA0RXBUF;
     }
 }
 
@@ -646,8 +656,8 @@ SpiTriggerRxProcessing(void)
 __interrupt void IntSpiGPIOHandler(void)
 {
 
-  if (__even_in_range(P2IFG, BIT6)){
-              P2IFG &= ~BIT6;
+  if (__even_in_range(P2IFG,BIT3/*BIT6*/)){
+              P2IFG &= ~BIT3; //~BIT6;
 		if (sSpiInformation.ulSpiState == eSPI_STATE_POWERUP)
 		{
 			/* This means IRQ line was low call a callback of HCI Layer to inform on event */
@@ -728,7 +738,8 @@ SSIContReadOperation(void)
 
 long TXBufferIsEmpty(void)
 {
- return (UC0IFG&UCB0TXIFG);
+ //return (UC0IFG&UCB0TXIFG);
+ return (UC0IFG&UCA0TXIFG);
 
 }
 
@@ -746,7 +757,8 @@ long TXBufferIsEmpty(void)
 
 long RXBufferIsEmpty(void)
 {
- return (UC0IFG&UCB0RXIFG);
+ //return (UC0IFG&UCB0RXIFG);
+ return (UC0IFG&UCA0RXIFG);
    
 
 }

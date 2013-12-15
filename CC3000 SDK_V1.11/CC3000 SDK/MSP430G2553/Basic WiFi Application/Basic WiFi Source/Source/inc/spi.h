@@ -59,18 +59,18 @@ typedef void (*gcSpiHandleTx)(void);
 extern unsigned char wlan_tx_buffer[];
 
 
-#define MOSI_MISO_PORT_SEL    P1SEL
-#define MOSI_MISO_PORT_SEL2   P1SEL2
-#define SPI_MISO_PIN         BIT2//BIT6
-#define SPI_MOSI_PIN         BIT3//BIT7
+#define MOSI_MISO_PORT_SEL    P3SEL
+#define MOSI_MISO_PORT_SEL2   P3SEL2
+#define SPI_MISO_PIN         BIT5//BIT6
+#define SPI_MOSI_PIN         BIT4//BIT7
 
-#define SPI_CLK_PORT_SEL    P1SEL
-#define SPI_CLK_PORT_SEL2   P1SEL2
-#define SPI_CLK_PIN         BIT5//BIT5
+#define SPI_CLK_PORT_SEL    P3SEL
+#define SPI_CLK_PORT_SEL2   P3SEL2
+#define SPI_CLK_PIN         BIT0//BIT5
 
 #define SPI_IRQ_PORT    P2IE
 #define SPI_IFG_PORT    P2IFG
-#define SPI_IRQ_PIN     BIT9//BIT6
+#define SPI_IRQ_PIN     BIT3//BIT6
 //*****************************************************************************
 //
 // Prototypes for the APIs.

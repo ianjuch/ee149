@@ -36,22 +36,22 @@
 #ifndef BOARD_H
 #define	BOARD_H
 
-#define SPI_CS_PORT_OUT    P2OUT
-#define SPI_CS_PORT_DIR    P2DIR
-#define SPI_CS_PORT_SEL    P2SEL
-#define SPI_CS_PORT_SEL2   P2SEL2
-#define SPI_CS_PIN         BIT7
+#define SPI_CS_PORT_OUT    P3OUT
+#define SPI_CS_PORT_DIR    P3DIR
+#define SPI_CS_PORT_SEL    P3SEL
+#define SPI_CS_PORT_SEL2   P3SEL2
+#define SPI_CS_PIN         BIT6
 
 #define SPI_IRQ_PORT_DIR   P2DIR
 #define SPI_IRQ_PORT_SEL   P2SEL
 #define SPI_IRQ_PORT_SEL2  P2SEL2
-#define SPI_IRQ_PIN        BIT6
+#define SPI_IRQ_PIN        BIT3
 
-#define WLAN_EN_PORT_OUT   P1OUT
-#define WLAN_EN_PORT_DIR   P1DIR
-#define WLAN_EN_PORT_SEL   P1SEL
-#define WLAN_EN_PORT_SEL2  P1SEL2
-#define WLAN_EN_PIN        BIT0
+#define WLAN_EN_PORT_OUT   P3OUT
+#define WLAN_EN_PORT_DIR   P3DIR
+#define WLAN_EN_PORT_SEL   P3SEL
+#define WLAN_EN_PORT_SEL2  P3SEL2
+#define WLAN_EN_PIN        BIT7
 
 #define UART1_PORT   P1SEL
 #define UART1_PIN    BIT1
