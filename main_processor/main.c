@@ -29,6 +29,9 @@ void fadeButtonsOff();
 void ledOn(unsigned char ledAddr);
 void ledOff(unsigned char ledAddr);
 
+void TRIACinit();
+void setTRIAC(unsigned char channel, unsigned char value);
+
 unsigned char LED_T_L_value;
 unsigned char LED_T_M_value;
 unsigned char LED_T_R_value;
@@ -168,15 +171,23 @@ int main(void)
                 switch (receivedByte&0x7F)
                 {
                     case 1:
-                        
+                        setTRIAC(1,255);
+                        setTRIAC(2,0);
+                        setTRIAC(3,0);
                         fadeButtonsOff();
                         fadeButtonOn(LED_T_L);
                         break;
                     case 2:
+                        setTRIAC(1,0);
+                        setTRIAC(2,255);
+                        setTRIAC(3,0);
                         fadeButtonsOff();
                         fadeButtonOn(LED_T_M);
                         break;
                     case 3:
+                        setTRIAC(1,0);
+                        setTRIAC(2,0);
+                        setTRIAC(3,255);
                         fadeButtonsOff();
                         fadeButtonOn(LED_T_R);
                         break;
@@ -212,8 +223,8 @@ void init(void)
     
     // Set clock to 1 MHz
     DCOCTL = 0;
-    BCSCTL1 = CALBC1_1MHZ;
-    DCOCTL = CALDCO_1MHZ;
+    BCSCTL1 = CALBC1_16MHZ;
+    DCOCTL = CALDCO_16MHZ;
     
     //SMCLK = 1 MHz / 8 = 125 KHz (SLAU144E p.5-15)
     //BCSCTL2 |= DIVS_3;
@@ -227,6 +238,8 @@ void init(void)
     i2cInit();
     
     spiInit();
+    
+    TRIACinit();
 }
 
 void i2cInit()
@@ -234,10 +247,42 @@ void i2cInit()
     // Set up I2C
     P3SEL |= BIT1|BIT2; //set to I2C mode
     UCB0CTL1 |= UCSWRST;
-    UCB0BR0 = 20; // Divide clock source by 10
+    UCB0BR0 = 160; // Divide clock source by 10
     UCB0CTL0 = UCSYNC|UCMST|UCMODE1|UCMODE0;
     UCB0CTL1 = UCSSEL1|UCSSEL0|UCSWRST;
     UCB0CTL1 &= ~UCSWRST;
+}
+
+void TRIACinit()
+{
+    P4DIR |= BIT3|BIT4|BIT5;
+}
+
+void setTRIAC(unsigned char channel, unsigned char value)
+{
+    switch (channel) {
+        case 1:
+            if (value >127)
+                P4OUT |= BIT3;
+            else
+                P4OUT &= ~BIT3;
+            break;
+        case 2:
+            if (value >127)
+                P4OUT |= BIT4;
+            else
+                P4OUT &= ~BIT4;
+            break;
+        case 3:
+            if (value >127)
+                P4OUT |= BIT5;
+            else
+                P4OUT &= ~BIT5;
+            break;
+            
+        default:
+            break;
+    }
 }
 
 void spiInit()
@@ -257,7 +302,7 @@ void spiInit()
     UCA0CTL1 |= UCSWRST;
     UCA0CTL0 |= UCMST|UCSYNC;
     UCA0CTL1 |= UCSSEL0|UCSSEL1|UCSWRST;
-    UCA0BR0 = 1;
+    UCA0BR0 = 160;
     UCA0CTL1 &= ~UCSWRST;
 }
 
