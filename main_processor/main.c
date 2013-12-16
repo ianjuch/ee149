@@ -166,6 +166,9 @@ int main(void)
     
     while (1)
     {
+        unsigned int triggerValue = TRIAC_A_value*(16667/255);
+        TRIAC_A_value++;
+        TA0CCR1 = triggerValue;
         //fadeOn(LED_L_5);
         unsigned char receivedByte = spiReadByte();
         //fadeOff(LED_L_5);
@@ -275,26 +278,31 @@ void timerA0init()
     
     TA0CCTL0 |= CCIE;
     
-    //unsigned int triggerValue = 8000;//(255-TRIAC_A_value)*(16667/255);
-    //TA0CCR1 = triggerValue;
+    unsigned int triggerValue = 8000;//(255-TRIAC_A_value)*(16667/255);
+    TA0CCR1 = triggerValue;
     
-    //TA1CCTL0 |= CCIE;
+    TA0CCTL1 |= CCIE;
     
 }
 
 interrupt(TIMER0_A0_VECTOR) timer0_a0_isr()
 {
     P1OUT ^= BIT6;
-    //if(TA0IV0 & 0x2)
-    //{
-        
-    //}
+    P4OUT &= ~BIT3;
+    P4OUT &= ~BIT4;
+    P4OUT &= ~BIT5;
     
 }
+
 
 interrupt(TIMER0_A1_VECTOR) timer0_a1_isr()
 {
     P1OUT ^= BIT6;
+    if (TAIV & 0x2) {
+        P4OUT |= BIT3;
+        P4OUT |= BIT4;
+        P4OUT |= BIT5;
+    }
 }
 
 void timerA1init()
