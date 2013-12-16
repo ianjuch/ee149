@@ -1,5 +1,5 @@
 #include <msp430.h>
-//#include <legacymsp430.h>
+#include <legacymsp430.h>
 //#include <stdint.h>
 
 
@@ -28,6 +28,9 @@ void i2cInit();
 void fadeButtonsOff();
 void ledOn(unsigned char ledAddr);
 void ledOff(unsigned char ledAddr);
+void initComparator();
+void timerA0init();
+void timerA1init();
 
 void TRIACinit();
 void setTRIAC(unsigned char channel, unsigned char value);
@@ -40,6 +43,10 @@ unsigned char LED_L[5] = {LED_L_1,LED_L_2,LED_L_3,LED_L_4,LED_L_5};
 unsigned char LED_R[5] = {LED_R_1,LED_R_2,LED_R_3,LED_R_4,LED_R_5};
 
 unsigned char lastButton = 0xFF;
+
+unsigned char TRIAC_A_value;
+unsigned char TRIAC_B_value;
+unsigned char TRIAC_C_value;
 
 void ledOn(unsigned char ledAddr)
 {
@@ -229,6 +236,7 @@ void init(void)
     //SMCLK = 1 MHz / 8 = 125 KHz (SLAU144E p.5-15)
     //BCSCTL2 |= DIVS_3;
     
+    _BIS_SR(GIE);
     
     
     P3DIR |= BIT3;
@@ -240,6 +248,103 @@ void init(void)
     spiInit();
     
     TRIACinit();
+    
+    initComparator();
+    
+    timerA0init();
+    timerA1init();
+    
+    // Init debug pin
+    P1DIR |= BIT6|BIT7;
+    P1OUT &= ~BIT6;
+    P1OUT &= ~BIT7;
+    
+    
+}
+
+void timerA0init()
+{
+    TA0CTL |= TACLR;
+    // Initialize timer for triggering TRIACs
+    TA0CTL |= TASSEL1; // 16 MHz
+    TA0CTL |= ID0|ID1; // divide by 8 (clock now 2 MHz)
+    TA0CCR0 = 16667; // Set period to 1/120 second
+    //TA0CCR0 = 0;
+    TA0CTL |= MC0; // Set up mode
+    //TA0CTL |= TAIE;
+    
+    TA0CCTL0 |= CCIE;
+    
+    //unsigned int triggerValue = 8000;//(255-TRIAC_A_value)*(16667/255);
+    //TA0CCR1 = triggerValue;
+    
+    //TA1CCTL0 |= CCIE;
+    
+}
+
+interrupt(TIMER0_A0_VECTOR) timer0_a0_isr()
+{
+    P1OUT ^= BIT6;
+    //if(TA0IV0 & 0x2)
+    //{
+        
+    //}
+    
+}
+
+interrupt(TIMER0_A1_VECTOR) timer0_a1_isr()
+{
+    P1OUT ^= BIT6;
+}
+
+void timerA1init()
+{
+    // Initialize timer for correcting TRIAC trigger timer phase
+    TA1CTL |= TACLR;
+    TA1CTL |= TASSEL1;
+    TA1CTL |= ID0 | ID1;
+    TA1CCR0 = 12000;
+    TA1CCTL0 |= CCIE;
+    
+}
+
+interrupt(TIMER1_A0_VECTOR) timer1_a0_isr()
+{
+    if (TA0R > 16667/2)
+    {
+        TA0R = 16666;
+    }
+    else
+    {
+        TA0R = 0;
+    }
+    P1OUT &= ~BIT7;
+    TA1CTL &= ~MC0; //STOP the timer
+}
+
+
+void initComparator()
+{
+    CACTL1 |= CAON|CAIE;
+    
+    CACTL1 |= CAREF0; // Select Vcc/4
+    CACTL1 |= CARSEL;
+    
+    //CACTL2 |= P2CA1;    //CA1 on negative input
+    CACTL2 |= P2CA4|P2CA0; //CA2 on positive input
+    CACTL2 |= CAF;
+}
+
+interrupt(COMPARATORA_VECTOR) comparatorISR()
+{
+    __delay_cycles(128);
+    if (CACTL2 & CAOUT)
+    {
+        //P1OUT ^= BIT6;
+        P1OUT |= BIT7;
+        TA1R = 0;
+        TA1CTL |= MC0; //start the timer
+    }
 }
 
 void i2cInit()
