@@ -35,6 +35,7 @@ void initComparator();
 void timerA0init();
 void timerA1init();
 inline void triggerTRIAC(unsigned char triacNumber);
+void updateDisplayAndTRIACS(unsigned char channel, unsigned char value);
 
 void TRIACinit();
 void setTRIAC(unsigned char channel, unsigned char value);
@@ -143,7 +144,6 @@ int main(void)
                     case 1:
                         fadeButtonsOff();
                         fadeButtonOn(LED_T_L);
-                        lastButton = receivedByte & 0x7F;
                         break;
                     case 2:
                         fadeButtonsOff();
@@ -158,34 +158,41 @@ int main(void)
                         fadeButtonOn(LED_L_0);
                         break;
                 }
+                updateDisplayAndTRIACS((lastButton-1)%3, channelPositionValues[(lastButton-1)%3]);
             }
         }
         else
         {
             if ((receivedByte&0x7F) != 0x7F)// && lastButton != 255) // If data is all ones, no touch was detected
             {
-                channelPositionValues[(lastButton-1)%3] = receivedByte&0x7F;
-                unsigned char x = ((receivedByte&0x7F) > 5) ? 5 : (receivedByte&0x7F);
-                
-                TRIAC_values[(lastButton-1)%3] = (5-x)*(255/5);
-                switch ((lastButton-1)%3) {
-                    case 0:
-                        setLedDisplay(x,LEFT_LEDS);
-                        break;
-                    case 1:
-                        setLedDisplay(x,LEFT_LEDS|RIGHT_LEDS);
-                        break;
-                    case 2:
-                        setLedDisplay(x,RIGHT_LEDS);
-                        break;
-                    default:
-                        fadeButtonOn(LED_L_0);
-                        break;
-                }
+                updateDisplayAndTRIACS((lastButton-1)%3, receivedByte&0x7F);
             }
         }
     }
     return 0;
+}
+
+void updateDisplayAndTRIACS(unsigned char channel, unsigned char value)
+{
+    channelPositionValues[channel] = value;
+    
+    unsigned char x = (value > 5) ? 5 : value;
+    
+    TRIAC_values[channel] = (5-x)*(255/5);
+    switch (channel) {
+        case 0:
+            setLedDisplay(x,LEFT_LEDS);
+            break;
+        case 1:
+            setLedDisplay(x,LEFT_LEDS|RIGHT_LEDS);
+            break;
+        case 2:
+            setLedDisplay(x,RIGHT_LEDS);
+            break;
+        default:
+            fadeButtonOn(LED_L_0);
+            break;
+    }
 }
 
 
