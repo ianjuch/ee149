@@ -234,12 +234,15 @@ SpiOpen(gcSpiHandleRx pfRxHandler)
 
 int init_spi(void)
 {
+  P3DIR |= BIT6;//???
 	// Select the SPI lines: MISO/MOSI on P1.6,7 
-	MOSI_MISO_PORT_SEL2 |= (SPI_MISO_PIN + SPI_MOSI_PIN);
-	MOSI_MISO_PORT_SEL |= (SPI_MISO_PIN + SPI_MOSI_PIN);
+	MOSI_MISO_PORT_SEL2 &= ~(SPI_MISO_PIN + SPI_MOSI_PIN);
+	//MOSI_MISO_PORT_SEL |= (SPI_MISO_PIN + SPI_MOSI_PIN);
+	MOSI_MISO_PORT_SEL |= (SPI_MISO_PIN + SPI_MOSI_PIN); //TODO: can't find in datasheet?
                   
                     //SPI CLK on P1.5                                                                                
-	SPI_CLK_PORT_SEL2 |= (SPI_CLK_PIN);
+	SPI_CLK_PORT_SEL2 &= ~(SPI_CLK_PIN);
+	//SPI_CLK_PORT_SEL2 |= (SPI_CLK_PIN);
 	SPI_CLK_PORT_SEL |= (SPI_CLK_PIN);
 
                     
