@@ -12,12 +12,15 @@
 #define LED_L_3 0x5
 #define LED_L_4 0x8
 #define LED_L_5 0x7
-#define LED_R_0 :(
+#define LED_R_0 :( - Not connected
 #define LED_R_1 0x9
 #define LED_R_2 0xa
 #define LED_R_3 0xb
 #define LED_R_4 0xd
 #define LED_R_5 0xf
+
+#define LEFT_LEDS 0x01
+#define RIGHT_LEDS 0x02
 
 void init();
 void delay_ms();
@@ -31,9 +34,11 @@ void ledOff(unsigned char ledAddr);
 void initComparator();
 void timerA0init();
 void timerA1init();
+inline void triggerTRIAC(unsigned char triacNumber);
 
 void TRIACinit();
 void setTRIAC(unsigned char channel, unsigned char value);
+void setLedDisplay(unsigned char value, unsigned char side);
 
 unsigned char LED_T_L_value;
 unsigned char LED_T_M_value;
@@ -43,10 +48,9 @@ unsigned char LED_L[5] = {LED_L_1,LED_L_2,LED_L_3,LED_L_4,LED_L_5};
 unsigned char LED_R[5] = {LED_R_1,LED_R_2,LED_R_3,LED_R_4,LED_R_5};
 
 unsigned char lastButton = 0xFF;
+unsigned char channelPositionValues[3];
 
-unsigned char TRIAC_A_value;
-unsigned char TRIAC_B_value;
-unsigned char TRIAC_C_value;
+unsigned char TRIAC_values[3];
 
 void ledOn(unsigned char ledAddr)
 {
@@ -60,6 +64,8 @@ void ledOff(unsigned char ledAddr)
 
 void fadeOn(unsigned char ledAddr)
 {
+    ledOn(ledAddr);
+    /*
     unsigned char i = 0;
     while (i < 155)
     {
@@ -67,65 +73,19 @@ void fadeOn(unsigned char ledAddr)
         i2cWriteByte(ledAddr, i, 0x60);
         delay_ms(2);
     }
+     */
 }
 
 void fadeButtonOn(unsigned char ledAddr)
 {
-    unsigned char *ledValue;
-    switch (ledAddr) {
-        case LED_T_L:
-            //ledValue = &LED_T_L_value;
-            while (LED_T_L_value < 255)
-            {
-                LED_T_L_value++;
-                i2cWriteByte(LED_T_L, LED_T_L_value, 0x60);
-                delay_ms(2);
-            }
-            break;
-        case LED_T_M:
-            //ledValue = &LED_T_M_value;
-            while (LED_T_M_value < 255)
-            {
-                LED_T_M_value++;
-                i2cWriteByte(LED_T_M, LED_T_M_value, 0x60);
-                delay_ms(2);
-            }
-            break;
-        case LED_T_R:
-            //ledValue = &LED_T_R_value;
-            while (LED_T_R_value < 255)
-            {
-                LED_T_R_value++;
-                i2cWriteByte(LED_T_R, LED_T_R_value, 0x60);
-                delay_ms(2);
-            }
-            break;
-        default:
-            break;
-    }
-    //while (*ledValue < 255)
-    //{
-    //    (*ledValue)++;
-    //    i2cWriteByte(ledAddr, *ledValue, 0x60);
-    //    delay_ms(2);
-    //}
+    i2cWriteByte(ledAddr, 255, 0x60);
 }
 
 void fadeButtonsOff()
 {
-    while (LED_T_L_value > 0 || LED_T_M_value > 0 || LED_T_R_value > 0)
-    {
-        if(LED_T_L_value > 0)
-            LED_T_L_value--;
-        if(LED_T_M_value > 0)
-            LED_T_M_value--;
-        if(LED_T_R_value > 0)
-            LED_T_R_value--;
-        i2cWriteByte(LED_T_L, LED_T_L_value, 0x60);
-        i2cWriteByte(LED_T_M, LED_T_M_value, 0x60);
-        i2cWriteByte(LED_T_R, LED_T_R_value, 0x60);
-        delay_ms(2);
-    }
+    i2cWriteByte(LED_T_L, 0, 0x60);
+    i2cWriteByte(LED_T_M, 0, 0x60);
+    i2cWriteByte(LED_T_R, 0, 0x60);
 }
 
 void fadeOff(unsigned char ledAddr)
@@ -142,6 +102,10 @@ void fadeOff(unsigned char ledAddr)
 int main(void)
 {
     init();
+    
+    TRIAC_values[0] = 0xFF;
+    TRIAC_values[1] = 0xFF;
+    TRIAC_values[2] = 0xFF;
     //delay_ms(500);
 
     //debug pins
@@ -163,68 +127,108 @@ int main(void)
     i2cWriteByte(0x16, 0xaa, 0x60);
     delay_ms(5);
     i2cWriteByte(0x17, 0xaa, 0x60);
-    
+
     while (1)
     {
-        unsigned int triggerValue = TRIAC_A_value*(16667/255);
-        TRIAC_A_value++;
-        TA0CCR1 = triggerValue;
-        //fadeOn(LED_L_5);
         unsigned char receivedByte = spiReadByte();
-        //fadeOff(LED_L_5);
         if (receivedByte & 0x80)
         {
-            if ((receivedByte&0x7F) != lastButton)
+            
+            if ((receivedByte & 0x7F) != 0 && (receivedByte & 0x7F) != lastButton)
             {
                 lastButton = receivedByte&0x7F;
                 
                 switch (receivedByte&0x7F)
                 {
                     case 1:
-                        setTRIAC(1,255);
-                        setTRIAC(2,0);
-                        setTRIAC(3,0);
                         fadeButtonsOff();
                         fadeButtonOn(LED_T_L);
+                        lastButton = receivedByte & 0x7F;
                         break;
                     case 2:
-                        setTRIAC(1,0);
-                        setTRIAC(2,255);
-                        setTRIAC(3,0);
                         fadeButtonsOff();
                         fadeButtonOn(LED_T_M);
                         break;
                     case 3:
-                        setTRIAC(1,0);
-                        setTRIAC(2,0);
-                        setTRIAC(3,255);
                         fadeButtonsOff();
                         fadeButtonOn(LED_T_R);
                         break;
                         
                     default:
+                        fadeButtonOn(LED_L_0);
                         break;
                 }
             }
         }
         else
         {
-            if ((receivedByte&0x7F) != 0x7F)
+            if ((receivedByte&0x7F) != 0x7F)// && lastButton != 255) // If data is all ones, no touch was detected
             {
-                for (int i = 0; i < receivedByte; i++)
-                {
-                    i2cWriteByte(LED_L[i],10,0x60);
-                    i2cWriteByte(LED_R[i],10,0x60);
-                }
-                for (int i = receivedByte; i < 5; i++)
-                {
-                    i2cWriteByte(LED_L[i],0,0x60);
-                    i2cWriteByte(LED_R[i],0,0x60);
+                channelPositionValues[(lastButton-1)%3] = receivedByte&0x7F;
+                unsigned char x = ((receivedByte&0x7F) > 5) ? 5 : (receivedByte&0x7F);
+                
+                TRIAC_values[(lastButton-1)%3] = (5-x)*(255/5);
+                switch ((lastButton-1)%3) {
+                    case 0:
+                        setLedDisplay(x,LEFT_LEDS);
+                        break;
+                    case 1:
+                        setLedDisplay(x,LEFT_LEDS|RIGHT_LEDS);
+                        break;
+                    case 2:
+                        setLedDisplay(x,RIGHT_LEDS);
+                        break;
+                    default:
+                        fadeButtonOn(LED_L_0);
+                        break;
                 }
             }
         }
     }
     return 0;
+}
+
+
+
+void setLedDisplay(unsigned char value, unsigned char side)
+{
+    if (LEFT_LEDS & side)
+    {
+        for (int i = 0; i < value; i++)
+        {
+            i2cWriteByte(LED_L[i%5],10,0x60);
+        }
+        for (int i = value; i < 5; i++)
+        {
+            i2cWriteByte(LED_L[i%5],0,0x60);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            i2cWriteByte(LED_L[i%5],0,0x60);
+        }
+    }
+    
+    if (RIGHT_LEDS & side)
+    {
+        for (int i = 0; i < value; i++)
+        {
+            i2cWriteByte(LED_R[i%5],10,0x60);
+        }
+        for (int i = value; i < 5; i++)
+        {
+            i2cWriteByte(LED_R[i%5],0,0x60);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            i2cWriteByte(LED_R[i%5],0,0x60);
+        }
+    }
 }
 
 void init(void)
@@ -294,14 +298,76 @@ interrupt(TIMER0_A0_VECTOR) timer0_a0_isr()
     
 }
 
+unsigned char nextTRIAC;
+
+inline void triggerTRIAC(unsigned char triacNumber)
+{
+    switch (triacNumber)
+    {
+        case 0:
+            P4OUT |= BIT3;
+            break;
+        case 1:
+            P4OUT |= BIT4;
+            break;
+        case 2:
+            P4OUT |= BIT5;
+            break;
+        default:
+            break;
+    }
+}
+
 
 interrupt(TIMER0_A1_VECTOR) timer0_a1_isr()
 {
     P1OUT ^= BIT6;
-    if (TAIV & 0x2) {
-        P4OUT |= BIT3;
-        P4OUT |= BIT4;
-        P4OUT |= BIT5;
+    if (TAIV & 0x2)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (TRIAC_values[i]*(16667/255) == TA0CCR1)
+            {
+                triggerTRIAC(i);
+            }
+        }
+        
+        unsigned int nextTimerValue = 255*(16667/255);
+        unsigned char foundNextTimerValue = 0;
+        
+        for (int i = 0; i < 3; i++)
+        {
+            if (TRIAC_values[i]*(16667/255) > TA0CCR1 && TRIAC_values[i]*(16667/255) < nextTimerValue)
+            {
+                nextTimerValue = TRIAC_values[i]*(16667/255);
+                foundNextTimerValue = 1;
+            }
+        }
+        
+        if (!foundNextTimerValue)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                if (TRIAC_values[i]*(16667/255) < nextTimerValue)
+                {
+                    nextTimerValue = TRIAC_values[i]*(16667/255);
+                }
+            }
+        }
+        
+        
+        TA0CCR1 = nextTimerValue;
+        
+        
+        //TA0CCR1 // time we just woke up at
+        
+        //check if any others are supposed to be triggered at this time
+        
+        
+        //unsigned int triggerValue = value;
+        
+        
+        //TA0CCR1 = triggerValue;
     }
 }
 
@@ -371,33 +437,6 @@ void TRIACinit()
     P4DIR |= BIT3|BIT4|BIT5;
 }
 
-void setTRIAC(unsigned char channel, unsigned char value)
-{
-    switch (channel) {
-        case 1:
-            if (value >127)
-                P4OUT |= BIT3;
-            else
-                P4OUT &= ~BIT3;
-            break;
-        case 2:
-            if (value >127)
-                P4OUT |= BIT4;
-            else
-                P4OUT &= ~BIT4;
-            break;
-        case 3:
-            if (value >127)
-                P4OUT |= BIT5;
-            else
-                P4OUT &= ~BIT5;
-            break;
-            
-        default:
-            break;
-    }
-}
-
 void spiInit()
 {
     // Connect clock pin
@@ -438,12 +477,15 @@ unsigned char spiReadByte()
 void i2cWriteByte(unsigned char data0, unsigned char data1, unsigned char address)
 {
     // Wait for bus to be not busy
+    
+    UCB0CTL1 &= ~UCSWRST;
+    
     while (UCB0STAT & UCBBUSY)
     {
         __asm__("nop");
     }
     
-    UCB0CTL1 &= ~UCSWRST;
+    
     
     UCB0I2CSA = address;
     UCB0CTL1 |= UCTR;
@@ -463,6 +505,7 @@ void i2cWriteByte(unsigned char data0, unsigned char data1, unsigned char addres
         __asm__("nop");
     }
     UCB0CTL1 |= UCTXSTP;
+    
     
     // set UCTXSTP or write another character to the buffer
 }
