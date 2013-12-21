@@ -110,7 +110,7 @@ int main(void)
     //delay_ms(500);
 
     //debug pins
-    P1DIR = BIT6|BIT7;
+    P1DIR |= BIT6|BIT7;
     P1SEL &= ~BIT6;
     P1SEL &= ~BIT7;
     P1SEL2 &= ~BIT6;
@@ -128,9 +128,13 @@ int main(void)
     i2cWriteByte(0x16, 0xaa, 0x60);
     delay_ms(5);
     i2cWriteByte(0x17, 0xaa, 0x60);
-
+    
+    // Assert CT CS, Deassert WiFi CS
+    P1OUT &= ~BIT0;
+    P3OUT |= BIT6;
     while (1)
     {
+        delay_ms(5);
         unsigned char receivedByte = spiReadByte();
         if (receivedByte & 0x80)
         {
@@ -203,7 +207,7 @@ void setLedDisplay(unsigned char value, unsigned char side)
     {
         for (int i = 0; i < value; i++)
         {
-            i2cWriteByte(LED_L[i%5],10,0x60);
+            i2cWriteByte(LED_L[i%5],255,0x60);
         }
         for (int i = value; i < 5; i++)
         {
@@ -222,7 +226,7 @@ void setLedDisplay(unsigned char value, unsigned char side)
     {
         for (int i = 0; i < value; i++)
         {
-            i2cWriteByte(LED_R[i%5],10,0x60);
+            i2cWriteByte(LED_R[i%5],255,0x60);
         }
         for (int i = value; i < 5; i++)
         {
@@ -252,7 +256,23 @@ void init(void)
     
     _BIS_SR(GIE);
     
+    // CT Chip Select
+    P1SEL &= ~BIT0;
+    P1SEL2 &= ~BIT0;
+    P1DIR |= BIT0;
+    P1OUT |= BIT0;
+    //P1OUT &= ~BIT0;
     
+    // WiFI Chip Select
+    P3SEL &= ~BIT6;
+    P3SEL2 &= ~BIT6;
+    P3DIR |= BIT6;
+    P3OUT |= BIT6;
+    
+    
+    
+    
+    // LED Driver _Reset
     P3DIR |= BIT3;
     P3OUT |= BIT3;
     

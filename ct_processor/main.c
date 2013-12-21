@@ -53,13 +53,11 @@ int main(void)
         
         int strongest = -1;
         int strongestLocation = -1;
-        int secondStrongest = -1;
-        int secondStrongestLocation = -1;
         
         // Look for a touch
         for (int i = 0; i < 7; i++)
         {
-            if (recents[i] < (baselines[i]/FILTER_LENGTH) - 6*((variances[i]/FILTER_LENGTH)+5))
+            if (recents[i] < (baselines[i]/FILTER_LENGTH) - 4 *((variances[i]/FILTER_LENGTH)+2))
             {
                 touchDetected = 1;
                 if (strongest == -1 || recents[i]/((baselines[i]/FILTER_LENGTH)/16) < strongest)
@@ -70,7 +68,7 @@ int main(void)
             }
         }
         
-        if (strongest != -1) // We found one touch point
+        if (strongest != -1)
         {
             scrollValue = strongestLocation;
         }
@@ -83,7 +81,7 @@ int main(void)
         for (int i = 7; i < 10; i++)
         {
             
-            if (recents[i] < (baselines[i]/FILTER_LENGTH) - 6*((variances[i]/FILTER_LENGTH)+5))
+            if (recents[i] < (baselines[i]/FILTER_LENGTH) - 6*((variances[i]/FILTER_LENGTH)+2))
             {
                 pushedButton = i-7+1;
                 touchDetected = 1;
@@ -91,19 +89,28 @@ int main(void)
         }
         
         //print(0xFFFF);
-        print(scrollValue);
-        //print(baselines[7]/FILTER_LENGTH);
-        //print(baselines[8]/FILTER_LENGTH);
-        //print(baselines[9]/FILTER_LENGTH);
-        /*
-        print(variances[7]/FILTER_LENGTH);
-        print(variances[8]/FILTER_LENGTH);
-        print(variances[9]/FILTER_LENGTH);
+        //print(scrollValue);
+        print(baselines[0]/FILTER_LENGTH);
+        print(baselines[1]/FILTER_LENGTH);
+        print(baselines[2]/FILTER_LENGTH);
+        print(baselines[3]/FILTER_LENGTH);
+        print(baselines[4]/FILTER_LENGTH);
         
-        print(recents[7]);
-        print(recents[8]);
-        print(recents[9]);
+        /*
+        
+        print(variances[0]/FILTER_LENGTH);
+        print(variances[1]/FILTER_LENGTH);
+        print(variances[2]/FILTER_LENGTH);
+        print(variances[3]/FILTER_LENGTH);
+        print(variances[4]/FILTER_LENGTH);
         */
+        
+        print(recents[0]);
+        print(recents[1]);
+        print(recents[2]);
+        print(recents[3]);
+        print(recents[4]);
+        
 
         if (!touchDetected)
             update_baselines();
@@ -213,7 +220,11 @@ void spiInit()
     P1SEL |= BIT7;
     P1SEL2 |= BIT7;
     
-    UCB0CTL0 |= UCSYNC;
+    // Connect STE
+    P1SEL |= BIT4;
+    P1SEL2 |= BIT4;
+    
+    UCB0CTL0 |= UCSYNC|UCMODE1;
     UCB0CTL1 |= UCSWRST;
     UCB0CTL1 &= ~UCSWRST;
     

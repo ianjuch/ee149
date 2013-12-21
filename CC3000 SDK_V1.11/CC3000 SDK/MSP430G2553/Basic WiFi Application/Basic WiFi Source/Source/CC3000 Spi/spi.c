@@ -234,7 +234,7 @@ SpiOpen(gcSpiHandleRx pfRxHandler)
 
 int init_spi(void)
 {
-  P3DIR |= BIT6;//???
+    P3DIR |= BIT6;//???
 	// Select the SPI lines: MISO/MOSI on P1.6,7 
 	MOSI_MISO_PORT_SEL2 &= ~(SPI_MISO_PIN + SPI_MOSI_PIN);
 	//MOSI_MISO_PORT_SEL |= (SPI_MISO_PIN + SPI_MOSI_PIN);

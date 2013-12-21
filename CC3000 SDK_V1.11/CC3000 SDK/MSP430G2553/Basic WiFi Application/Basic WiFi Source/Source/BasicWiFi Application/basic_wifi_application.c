@@ -869,7 +869,7 @@ void delay_ms(int d)
 
 main(void)
 {
-	WDTCTL = WDTPW + WDTHOLD;
+  WDTCTL = WDTPW + WDTHOLD;
   
   P1DIR |= BIT6 | BIT7;
   P1OUT &= ~BIT6;
@@ -913,8 +913,8 @@ main(void)
 	memset(g_ucUARTBuffer, 0xFF, UART_IF_BUFFER);
 	uart_have_cmd =0;
 
-	char* string = "\nwifi test\n";
-	DispatcherUartSendPacket((unsigned char *)(string), 11);
+	//char* string = "\nwifi test\n";
+	//DispatcherUartSendPacket((unsigned char *)(string), 11);
 	
 	//connect to access point
 	//wlan_connect("TRENDnet637", 11);
